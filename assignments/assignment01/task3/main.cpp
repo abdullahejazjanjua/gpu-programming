@@ -5,11 +5,11 @@
 
 using namespace std;
 
-float** allocateMatrix(int N);
-void freeMatrix(float **mat, int N);
-float** addMatrix(float **mat1, float **mat2, int N);
-void readMatrix(ifstream& f, float **mat, int N);
-void printMatrix(float **mat, int N, ostream& out);
+int** allocateMatrix(int N);
+void freeMatrix(int **mat, int N);
+
+void readMatrix(ifstream& f, int **mat, int N);
+void printMatrix(int **mat, int N, ostream& out);
 
 int main(int argc, char *argv[])
 {
@@ -30,15 +30,18 @@ int main(int argc, char *argv[])
     getline(ifile, str);
     int N = stoi(str);
 
-    float **A = allocateMatrix(N);
-    float **B = allocateMatrix(N);
+    int **A = allocateMatrix(N);
+    int **B = allocateMatrix(N);
     
     getline(ifile, str);
     readMatrix(ifile, A, N);
-    readMatrix(ifile, B, N);    
+    readMatrix(ifile, B, N);
+    
+    
     ifile.close();
     
-    float **C = addMatrix(A, B, N);
+    int **C = addMatrix(A, B, N);
+    
     if (argc == 2)
         printMatrix(C, N, cout);
     else
@@ -53,19 +56,19 @@ int main(int argc, char *argv[])
     freeMatrix(C, N);
 }
 
-float** allocateMatrix(int N)
+int** allocateMatrix(int N)
 {
-    float **mat = new float*[N]; 
+    int **mat = new int*[N]; 
     
     for (int i = 0; i < N; i++)
     {
-        mat[i] = new float[N]; 
+        mat[i] = new int[N]; 
     }
     
     return mat;
 }
 
-void freeMatrix(float **mat, int N)
+void freeMatrix(int **mat, int N)
 {
     for (int i = 0; i < N; i++)
     {
@@ -75,7 +78,7 @@ void freeMatrix(float **mat, int N)
     delete[] mat;
 }
 
-void readMatrix(ifstream& f, float **mat, int N)
+void readMatrix(ifstream& f, int **mat, int N)
 {
     string str;
     int i = 0;
@@ -86,14 +89,14 @@ void readMatrix(ifstream& f, float **mat, int N)
         stringstream ss(str);
         while (getline(ss, val, ' ') && j < N)
         {
-            mat[i][j] = stof(val);
+            mat[i][j] = stoi(val);
             j++;
         }
         i++;
     }
 }
 
-void printMatrix(float **mat, int N, ostream& out)
+void printMatrix(int **mat, int N, ostream& out)
 {
     for (int i = 0; i < N; i++)
     {
@@ -103,18 +106,4 @@ void printMatrix(float **mat, int N, ostream& out)
         }
         out << endl;
     }
-}
-
-float** addMatrix(float **mat1, float **mat2, int N)
-{
-    float **mat3 = allocateMatrix(N);
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N; j++)
-        {
-            mat3[i][j] = mat1[i][j] + mat2[i][j];
-        }
-    }
-    
-    return mat3;
 }
