@@ -24,7 +24,7 @@ void vectorAdd(float *A_h, float *B_h, float *C_h, int N)
     
     vectorAddKernel<<<N/256, 256>>>(A_d, B_d, C_d, N);
     
-    cudaMemcpy(C_d, C_h, byteSize, cudaMemcpyDeviceToHost);
+    cudaMemcpy(C_h, C_d, byteSize, cudaMemcpyDeviceToHost);
     
     
     cudaFree(A_d);
