@@ -1,1 +1,1 @@
-void addMatrix(float **A, float **B, float **C, int N);
+void matrixAdd(float **mat1_h, float **mat2_h, float **mat3_h, int num_rows, int num_cols);
