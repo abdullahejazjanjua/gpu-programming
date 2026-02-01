@@ -1,1 +1,20 @@
-# gpu-programming
+# GPU Programming with CUDA
+
+## Overview
+
+This repo contains CUDA code for GPU programming course at GIKI.
+I use Google Colab for running CUDA code with rclone for syncing local code to Colab.
+
+## Setup
+
+- Write code locally
+- Use rclone to sync to Google Drive/Colab
+- Run & compile in `interface.ipynb` on Colab
+
+## How to Run
+
+See `interface.ipynb` for steps to:
+
+1. Sync code using rclone
+2. Compile CUDA code
+3. Run on Colab GPU
