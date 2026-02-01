@@ -35,9 +35,7 @@ int main(int argc, char *argv[])
     
     getline(ifile, str);
     readMatrix(ifile, A, N);
-    readMatrix(ifile, B, N);
-    
-    
+    readMatrix(ifile, B, N);    
     ifile.close();
     
     int **C = addMatrix(A, B, N);
