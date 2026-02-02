@@ -44,7 +44,7 @@ void matrixAdd(float *mat1_h, float *mat2_h, float *mat3_h, int num_rows, int nu
     matrixCopy(mat2_d, mat2_h, num_rows, num_cols, cudaMemcpyHostToDevice);
     
     dim3 blockDim(16, 16, 1); // x (columns), y (rows), z (depth)
-    dim3 gridDim(ceil(num_cols/16.0), ceil(num_rows/16.0), 1); // x (columns), y (rows), z (depth)
+    dim3 gridDim(ceil(num_cols / 16.0), ceil(num_rows / 16.0), 1); // x (columns), y (rows), z (depth)
     matrixAddKernel<<<gridDim, blockDim>>>(mat1_d, mat2_d, mat3_d, num_rows, num_cols);
     
     matrixCopy(mat3_h, mat3_d, num_rows, num_cols, cudaMemcpyDeviceToHost);
