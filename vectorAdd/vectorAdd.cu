@@ -17,8 +17,8 @@ void vectorAdd(float *A_h, float *B_h, float *C_h, int N) {
   cudaMemcpy(A_d, A_h, byteSize, cudaMemcpyHostToDevice);
   cudaMemcpy(B_d, B_h, byteSize, cudaMemcpyHostToDevice);
 
-  dim3 dimGrid(ceil(N / 256), 1, 1); // x, y, z
-  dim3 dimBlock(ceil(256), 1, 1);    // x, y, z
+  dim3 dimGrid(ceil(N / 256.0), 1, 1); // x, y, z
+  dim3 dimBlock(ceil(256.0), 1, 1);    // x, y, z
   vectorAddKernel<<<dimGrid, dimBlock>>>(A_d, B_d, C_d, N);
 
   cudaMemcpy(C_h, C_d, byteSize, cudaMemcpyDeviceToHost);
