@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <cstring>
 #include <sstream>
@@ -7,10 +8,10 @@
 
 using namespace std;
 
-float** allocateMatrix(int num_rows, int num_cols);
-void freeMatrix(float **mat, int num_rows);
-void readMatrix(ifstream& f, float **mat, int num_rows, int num_cols);
-void printMatrix(float **mat, int num_rows, int num_cols, ostream& out);
+float* allocateMatrix(int num_rows, int num_cols);
+void freeMatrix(float *mat, int num_rows);
+void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols);
+void printMatrix(float *mat, int num_rows, int num_cols, ostream& out);
 
 int main(int argc, char *argv[])
 {
@@ -33,8 +34,8 @@ int main(int argc, char *argv[])
     getline(ifile, str);
     int num_cols = stoi(str);
 
-    float **A = allocateMatrix(num_rows, num_cols);
-    float **B = allocateMatrix(num_rows, num_cols);
+    float *A = allocateMatrix(num_rows, num_cols);
+    float *B = allocateMatrix(num_rows, num_cols);
     
     getline(ifile, str);
     readMatrix(ifile, A, num_rows, num_cols);
@@ -58,15 +59,14 @@ int main(int argc, char *argv[])
     freeMatrix(C, num_rows);
 }
 
-float** allocateMatrix(int num_rows, int num_cols)
+float* allocateMatrix(int num_rows, int num_cols)
 {
-    float **mat = new float*[num_rows]; 
-    
-    for (int i = 0; i < num_rows; i++)
+    float *mat = new float[num_rows * num_cols];
+    if (mat == nullptr)
     {
-        mat[i] = new float[num_cols]; 
+        cout << "Failed to allocate memory\n";
+        exit(EXIT_FAILURE);
     }
-    
     return mat;
 }
 
@@ -80,7 +80,7 @@ void freeMatrix(float **mat, int num_rows)
     delete[] mat;
 }
 
-void readMatrix(ifstream& f, float **mat, int num_rows, int num_cols)
+void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols)
 {
     string str;
     int i = 0;
@@ -91,20 +91,20 @@ void readMatrix(ifstream& f, float **mat, int num_rows, int num_cols)
         stringstream ss(str);
         while (getline(ss, val, ' ') && j < num_cols)
         {
-            mat[i][j] = stof(val);
+            mat[i * num_cols + j] = stof(val);
             j++;
         }
         i++;
     }
 }
 
-void printMatrix(float **mat, int num_rows, int num_cols, ostream& out)
+void printMatrix(float *mat, int num_rows, int num_cols, ostream& out)
 {
     for (int i = 0; i < num_rows; i++)
     {
         for (int j = 0; j < num_cols; j++)
         {
-             out << mat[i][j] << " ";
+             out << mat[i * num_cols + j] << " ";
         }
         out << endl;
     }

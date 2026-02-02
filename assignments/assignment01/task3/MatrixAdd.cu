@@ -1,36 +1,40 @@
-__global__ void matrixAddKernel(float **mat1, float **mat2, float **mat3, int num_rows, int num_cols)
+#include <stdio.h>
+__global__ void matrixAddKernel(float *mat1, float *mat2, float *mat3, int num_rows, int num_cols)
 {
     int i = blockIdx.y * blockDim.y + threadIdx.y; // row
     int j = blockIdx.x * blockDim.x + threadIdx.x; // column
     
     if (i < num_rows && j < num_cols)
     {
-        mat3[i][j] = mat1[i][j] + mat2[i][j];
+        int global_idx = i * num_cols + j;
+        mat3[global_idx] = mat1[global_idx] + mat2[global_idx];
     }
 }
 
 
-void matrixCopy(float **matdest, float **matsrc, int num_rows, int num_cols, cudaMemcpyKind direction)
+void matrixCopy(float *matdest, float *matsrc, int num_rows, int num_cols, cudaMemcpyKind direction)
 {
-    for (int i = 0; i < num_rows; i++)
+    cudaError_t err = cudaMemcpy(matdest, matsrc, (num_rows * num_cols * sizeof(float)), direction);
+    if (err != cudaSuccess) 
     {
-        cudaMemcpy()
-        for (int j = 0; j < num_cols; j++)
-        {
-            matdest[i * num_cols + j] = matsrc[i][j];
-        }
+        fprintf(stderr, "Failed to copy matdest from host to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
     }
-        
 }
 
-float** matrixAllocate(int num_rows, int num_cols)
+float* matrixAllocate(int num_rows, int num_cols)
 {
-    float **mat;
-    cudaMalloc((void **)&mat, (num_rows * num_cols * sizeof(float*)));
+    float *mat;
+    cudaError_t err = cudaMalloc((void **)&mat, (num_rows * num_cols * sizeof(float)));
+    if (err != cudaSuccess) 
+    {
+        fprintf(stderr, "Failed to allocate memory in device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+     }
     return mat;
 }
 
-void matrixAdd(float **mat1_h, float **mat2_h, float **mat3_h, int num_rows, int num_cols)
+void matrixAdd(float *mat1_h, float *mat2_h, float *mat3_h, int num_rows, int num_cols)
 {
     float *mat1_d = matrixAllocate(num_rows, num_cols);
     float *mat2_d = matrixAllocate(num_rows, num_cols);
@@ -44,5 +48,4 @@ void matrixAdd(float **mat1_h, float **mat2_h, float **mat3_h, int num_rows, int
     matrixAddKernel<<<gridDim, blockDim>>>(mat1_d, mat2_d, mat3_d, num_rows, num_cols);
     
     matrixCopy(mat3_h, mat3_d, num_rows, num_cols, cudaMemcpyDeviceToHost);
-    
 }
