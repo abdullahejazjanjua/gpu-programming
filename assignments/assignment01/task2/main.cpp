@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <cstring>
 #include <sstream>
@@ -5,11 +6,11 @@
 
 using namespace std;
 
-float** allocateMatrix(int num_rows, int num_cols);
-void freeMatrix(float **mat, int num_rows);
-float** addMatrix(float **mat1, float **mat2, int num_rows, int num_cols);
-void readMatrix(ifstream& f, float **mat, int num_rows, int num_cols);
-void printMatrix(float **mat, int num_rows, int num_cols, ostream& out);
+float* allocateMatrix(int num_rows, int num_cols);
+void freeMatrix(float *mat, int num_rows);
+float* addMatrix(float *mat1, float *mat2, int num_rows, int num_cols);
+void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols);
+void printMatrix(float *mat, int num_rows, int num_cols, ostream& out);
 
 int main(int argc, char *argv[])
 {
@@ -32,15 +33,15 @@ int main(int argc, char *argv[])
     getline(ifile, str);
     int num_cols = stoi(str);
 
-    float **A = allocateMatrix(num_rows, num_cols);
-    float **B = allocateMatrix(num_rows, num_cols);
+    float *A = allocateMatrix(num_rows, num_cols);
+    float *B = allocateMatrix(num_rows, num_cols);
     
     getline(ifile, str);
     readMatrix(ifile, A, num_rows, num_cols);
     readMatrix(ifile, B, num_rows, num_cols);    
     ifile.close();
     
-    float **C = addMatrix(A, B, num_rows, num_cols);
+    float *C = addMatrix(A, B, num_rows, num_cols);
     if (argc == 2)
         printMatrix(C, num_rows, num_cols, cout);
     else
@@ -50,34 +51,23 @@ int main(int argc, char *argv[])
         ofile.close();
     }
     
-    freeMatrix(A, num_rows);
-    freeMatrix(B, num_rows);
-    freeMatrix(C, num_rows);
+    delete[] A;
+    delete[] B;
+    delete[] C;
 }
 
-float** allocateMatrix(int num_rows, int num_cols)
+float* allocateMatrix(int num_rows, int num_cols)
 {
-    float **mat = new float*[num_rows]; 
-    
-    for (int i = 0; i < num_rows; i++)
+    float *mat = new float[num_rows * num_cols]; 
+    if (mat == nullptr)
     {
-        mat[i] = new float[num_cols]; 
+        cerr << "Couldn't allocate memory\n";
+        exit(EXIT_FAILURE);
     }
-    
     return mat;
 }
 
-void freeMatrix(float **mat, int num_rows)
-{
-    for (int i = 0; i < num_rows; i++)
-    {
-        delete[] mat[i];
-    }
-    
-    delete[] mat;
-}
-
-void readMatrix(ifstream& f, float **mat, int num_rows, int num_cols)
+void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols)
 {
     string str;
     int i = 0;
@@ -88,33 +78,33 @@ void readMatrix(ifstream& f, float **mat, int num_rows, int num_cols)
         stringstream ss(str);
         while (getline(ss, val, ' ') && j < num_cols)
         {
-            mat[i][j] = stof(val);
+            mat[i * num_cols + j] = stof(val);
             j++;
         }
         i++;
     }
 }
 
-void printMatrix(float **mat, int num_rows, int num_cols, ostream& out)
+void printMatrix(float *mat, int num_rows, int num_cols, ostream& out)
 {
     for (int i = 0; i < num_rows; i++)
     {
         for (int j = 0; j < num_cols; j++)
         {
-             out << mat[i][j] << " ";
+             out << mat[i * num_cols + j] << " ";
         }
         out << endl;
     }
 }
 
-float** addMatrix(float **mat1, float **mat2, int num_rows, int num_cols)
+float* addMatrix(float *mat1, float *mat2, int num_rows, int num_cols)
 {
-    float **mat3 = allocateMatrix(num_rows, num_cols);
+    float *mat3 = allocateMatrix(num_rows, num_cols);
     for (int i = 0; i < num_rows; i++)
     {
         for (int j = 0; j < num_cols; j++)
         {
-            mat3[i][j] = mat1[i][j] + mat2[i][j];
+            mat3[i * num_cols + j] = mat1[i * num_cols + j] + mat2[i * num_cols + j];
         }
     }
     

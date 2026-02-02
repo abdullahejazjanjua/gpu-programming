@@ -10,6 +10,7 @@ using namespace std;
 
 float* allocateMatrix(int num_rows, int num_cols);
 void freeMatrix(float *mat, int num_rows);
+float* addMatrix(float *mat1, float *mat2, int num_rows, int num_cols);
 void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols);
 void printMatrix(float *mat, int num_rows, int num_cols, ostream& out);
 
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        cerr << "USAGE: ./a.out <input-file>.txt [<output-file>.txt]\n";
+        cerr << "USAGE: ./a.out <input-file>.txt [<output-file>.txt]\num_rows";
         return 1;
     }
     
@@ -42,9 +43,8 @@ int main(int argc, char *argv[])
     readMatrix(ifile, B, num_rows, num_cols);    
     ifile.close();
     
-    float **C = allocateMatrix(num_rows, num_cols);
+    float *C = allocateMatrix(num_rows, num_cols);
     matrixAdd(A, B, C, num_rows, num_cols);
-    
     if (argc == 2)
         printMatrix(C, num_rows, num_cols, cout);
     else
@@ -54,30 +54,20 @@ int main(int argc, char *argv[])
         ofile.close();
     }
     
-    freeMatrix(A, num_rows);
-    freeMatrix(B, num_rows);
-    freeMatrix(C, num_rows);
+    delete[] A;
+    delete[] B;
+    delete[] C;
 }
 
 float* allocateMatrix(int num_rows, int num_cols)
 {
-    float *mat = new float[num_rows * num_cols];
+    float *mat = new float[num_rows * num_cols]; 
     if (mat == nullptr)
     {
-        cout << "Failed to allocate memory\n";
+        cerr << "Couldn't allocate memory\n";
         exit(EXIT_FAILURE);
     }
     return mat;
-}
-
-void freeMatrix(float **mat, int num_rows)
-{
-    for (int i = 0; i < num_rows; i++)
-    {
-        delete[] mat[i];
-    }
-    
-    delete[] mat;
 }
 
 void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols)
