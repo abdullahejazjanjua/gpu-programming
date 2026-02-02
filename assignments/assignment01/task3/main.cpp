@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
     else
     {
         ofstream ofile(argv[2]);
+        
+        ofile << num_rows << "\n";
+        ofile << num_cols << "\n\n";
         printMatrix(C, num_rows, num_cols, ofile);
         ofile.close();
     }
