@@ -63,5 +63,9 @@ void matrixAdd(float *mat1_h, float *mat2_h, float *mat3_h, int num_rows, int nu
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     
-    printf("%.4f\n", milliseconds * 1000);
+    printf("Time taken (GPU + Memory Access): %.4f\n", milliseconds * 1000);
+    
+    cudaFree(mat1_d);
+    cudaFree(mat2_d);
+    cudaFree(mat3_d);
 }
