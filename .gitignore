@@ -5,6 +5,9 @@
 *.cubin
 *.fatbin
 
+# large files
+assignments/assignment01/inputfiles
+
 # macos
 .DS_Store
 

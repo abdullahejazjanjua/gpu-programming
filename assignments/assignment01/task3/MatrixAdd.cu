@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <time.h>
+
 __global__ void matrixAddKernel(float *mat1, float *mat2, float *mat3, int num_rows, int num_cols)
 {
     int i = blockIdx.y * blockDim.y + threadIdx.y; // row
@@ -36,11 +38,17 @@ float* matrixAllocate(int num_rows, int num_cols)
 
 void matrixAdd(float *mat1_h, float *mat2_h, float *mat3_h, int num_rows, int num_cols)
 {
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    
     float *mat1_d = matrixAllocate(num_rows, num_cols);
     float *mat2_d = matrixAllocate(num_rows, num_cols);
     float *mat3_d = matrixAllocate(num_rows, num_cols);
     
-    matrixCopy(mat1_d, mat1_h, num_rows, num_cols, cudaMemcpyHostToDevice);
+    cudaEventRecord(start);
+    
+    matrixCopy(mat1_d, mat1_h, num_rows, num_cols, cudaMemcpyHostToDevice);    
     matrixCopy(mat2_d, mat2_h, num_rows, num_cols, cudaMemcpyHostToDevice);
     
     dim3 blockDim(16, 16, 1); // x (columns), y (rows), z (depth)
@@ -48,4 +56,12 @@ void matrixAdd(float *mat1_h, float *mat2_h, float *mat3_h, int num_rows, int nu
     matrixAddKernel<<<gridDim, blockDim>>>(mat1_d, mat2_d, mat3_d, num_rows, num_cols);
     
     matrixCopy(mat3_h, mat3_d, num_rows, num_cols, cudaMemcpyDeviceToHost);
+    
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop); //  cudaEventSynchronize() blocks CPU execution until the specified event is recorded
+    
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    
+    printf("%.4f\n", milliseconds * 1000);
 }

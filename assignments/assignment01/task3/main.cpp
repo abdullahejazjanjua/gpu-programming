@@ -3,6 +3,8 @@
 #include <cstring>
 #include <sstream>
 #include <fstream>
+#include <chrono>
+
 
 #include "matrixAdd.h"
 
@@ -44,15 +46,22 @@ int main(int argc, char *argv[])
     ifile.close();
     
     float *C = allocateMatrix(num_rows, num_cols);
+    auto begin = chrono::high_resolution_clock::now();
     matrixAdd(A, B, C, num_rows, num_cols);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::milliseconds>(end - begin);
     if (argc == 2)
+    {
         printMatrix(C, num_rows, num_cols, cout);
+        cout << "Time taken: " << duration.count() << endl;
+    }
     else
     {
         ofstream ofile(argv[2]);
         
         ofile << num_rows << "\n";
         ofile << num_cols << "\n\n";
+        ofile << "Time taken: " << duration.count() << "\n\n";
         printMatrix(C, num_rows, num_cols, ofile);
         ofile.close();
     }

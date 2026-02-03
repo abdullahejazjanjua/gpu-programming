@@ -4,6 +4,8 @@
 #include <sstream>
 #include <fstream>
 
+#include <chrono>
+
 using namespace std;
 
 float* allocateMatrix(int num_rows, int num_cols);
@@ -41,14 +43,22 @@ int main(int argc, char *argv[])
     readMatrix(ifile, B, num_rows, num_cols);    
     ifile.close();
     
+    auto begin = chrono::high_resolution_clock::now();
     float *C = addMatrix(A, B, num_rows, num_cols);
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - begin);
+    
     if (argc == 2)
+    {
+        cout << "Time taken: " << duration.count() << "mus" << endl;
         printMatrix(C, num_rows, num_cols, cout);
+    }
     else
     {
         ofstream ofile(argv[2]);
         ofile << num_rows << "\n";
         ofile << num_cols << "\n\n";
+        ofile << "Time taken: " << duration.count() << "mus" << "\n\n";
         printMatrix(C, num_rows, num_cols, ofile);
         ofile.close();
     }
