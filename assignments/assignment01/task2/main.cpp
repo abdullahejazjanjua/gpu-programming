@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
     ifstream ifile(argv[1]);
     if (!ifile.is_open())
     {
-        cerr << "File not open\num_rows";
+        cerr << "File not open\n";
         return 1;
     }
     string str;
