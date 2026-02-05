@@ -1,49 +1,49 @@
 mat1: 128 x 512 mat2: 512 x 256
-GPU TIME: 321.855988 microsecs
-CPU TIME: 59021 microsecs
-Difference: 0.121277
+GPU TIME: 318.112000 microsecs
+CPU TIME: 56821 microsecs
+Difference: 2.89672e-08
 
 mat1: 512 x 256 mat2: 256 x 128
-GPU TIME: 361.312012 microsecs
-CPU TIME: 72821 microsecs
-Difference: 0.121204
+GPU TIME: 345.216003 microsecs
+CPU TIME: 55697 microsecs
+Difference: 2.86823e-08
 
 mat1: 256 x 1024 mat2: 1024 x 512
-GPU TIME: 1451.007935 microsecs
-CPU TIME: 898068 microsecs
-Difference: 0.9534
+GPU TIME: 1397.760010 microsecs
+CPU TIME: 885032 microsecs
+Difference: 2.84479e-08
 
 mat1: 1024 x 256 mat2: 256 x 512
-GPU TIME: 2296.384033 microsecs
-CPU TIME: 504174 microsecs
-Difference: 0.95607
+GPU TIME: 2339.647949 microsecs
+CPU TIME: 477242 microsecs
+Difference: 2.84806e-08
 
 mat1: 100 x 200 mat2: 200 x 500
-GPU TIME: 292.256012 microsecs
-CPU TIME: 33388 microsecs
-Difference: 0.0730705
+GPU TIME: 275.871979 microsecs
+CPU TIME: 33701 microsecs
+Difference: 2.91075e-08
 
 mat1: 500 x 1000 mat2: 1000 x 200
-GPU TIME: 1056.800049 microsecs
-CPU TIME: 346353 microsecs
-Difference: 0.714172
+GPU TIME: 1090.368042 microsecs
+CPU TIME: 363116 microsecs
+Difference: 2.85927e-08
 
 mat1: 2048 x 512 mat2: 512 x 1024
-GPU TIME: 12075.744141 microsecs
-CPU TIME: 8535113 microsecs
-Difference: 7.6454
+GPU TIME: 12106.975586 microsecs
+CPU TIME: 7352027 microsecs
+Difference: 2.84599e-08
 
 mat1: 4096 x 1024 mat2: 1024 x 256
-GPU TIME: 9420.160156 microsecs
-CPU TIME: 4301946 microsecs
-Difference: 7.64258
+GPU TIME: 10277.919922 microsecs
+CPU TIME: 6193572 microsecs
+Difference: 2.84604e-08
 
 mat1: 300 x 300 mat2: 300 x 600
-GPU TIME: 986.335999 microsecs
-CPU TIME: 182944 microsecs
-Difference: 0.388191
+GPU TIME: 940.223999 microsecs
+CPU TIME: 196901 microsecs
+Difference: 2.88323e-08
 
 mat1: 600 x 900 mat2: 900 x 300
-GPU TIME: 1708.864014 microsecs
-CPU TIME: 648818 microsecs
-Difference: 1.16888
+GPU TIME: 1708.991943 microsecs
+CPU TIME: 635126 microsecs
+Difference: 2.88333e-08

@@ -48,14 +48,17 @@ float* matmul_cpu(float *mat1, float *mat2, float *mat3, int n, int k, int m)
 void check_correctness(float *mat1, float *mat2, int n, int k, int m)
 {
     float err = 0;
+    float eps = 1e-8;
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < m; j++)
         {
-            err += abs(mat1[i * m + j] - mat2[i * m + j]);
+            float val1 = mat1[i * m + j];
+            float val2 = mat2[i * m + j];
+            err += abs(val1 - val2) / (max(max(val1, val2), eps));
         }
     }
-    cout << "Difference: " << err << endl;
+    cout << "Difference: " << err / (n * m) << endl;
 }
 
 void populate_matrix(matrix *mat)
