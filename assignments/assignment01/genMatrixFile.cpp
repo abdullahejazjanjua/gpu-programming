@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     {
         for (int j = 0; j < num_cols; j++)
         {
-            mat[i * num_cols + j] = (float)(rand()) / (float)(rand());
+            mat[i * num_cols + j] = (float)(rand()) / (float)(RAND_MAX);
         }
     }
     

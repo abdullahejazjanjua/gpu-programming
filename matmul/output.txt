@@ -1,0 +1,49 @@
+mat1: 128 x 512 mat2: 512 x 256
+GPU TIME: 321.855988 microsecs
+CPU TIME: 59021 microsecs
+Difference: 0.121277
+
+mat1: 512 x 256 mat2: 256 x 128
+GPU TIME: 361.312012 microsecs
+CPU TIME: 72821 microsecs
+Difference: 0.121204
+
+mat1: 256 x 1024 mat2: 1024 x 512
+GPU TIME: 1451.007935 microsecs
+CPU TIME: 898068 microsecs
+Difference: 0.9534
+
+mat1: 1024 x 256 mat2: 256 x 512
+GPU TIME: 2296.384033 microsecs
+CPU TIME: 504174 microsecs
+Difference: 0.95607
+
+mat1: 100 x 200 mat2: 200 x 500
+GPU TIME: 292.256012 microsecs
+CPU TIME: 33388 microsecs
+Difference: 0.0730705
+
+mat1: 500 x 1000 mat2: 1000 x 200
+GPU TIME: 1056.800049 microsecs
+CPU TIME: 346353 microsecs
+Difference: 0.714172
+
+mat1: 2048 x 512 mat2: 512 x 1024
+GPU TIME: 12075.744141 microsecs
+CPU TIME: 8535113 microsecs
+Difference: 7.6454
+
+mat1: 4096 x 1024 mat2: 1024 x 256
+GPU TIME: 9420.160156 microsecs
+CPU TIME: 4301946 microsecs
+Difference: 7.64258
+
+mat1: 300 x 300 mat2: 300 x 600
+GPU TIME: 986.335999 microsecs
+CPU TIME: 182944 microsecs
+Difference: 0.388191
+
+mat1: 600 x 900 mat2: 900 x 300
+GPU TIME: 1708.864014 microsecs
+CPU TIME: 648818 microsecs
+Difference: 1.16888
