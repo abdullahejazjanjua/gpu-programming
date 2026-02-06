@@ -1,74 +1,55 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-__global__ void matmulKernel(float *mat1, float *mat2, float *mat3, int n, int m, int k)
+__global__ void grayscaleKernel(unsigned char *data_in, unsigned char *data_out, int height, int width) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < height && col < width) 
+    {
+        int gray_idx = row * width + col;
+        int idx = gray_idx * 3;
+
+        unsigned char b = data_in[idx + 0];
+        unsigned char g = data_in[idx + 1];
+        unsigned char r = data_in[idx + 2];
+
+        data_out[gray_idx] = (unsigned char)(0.216 * r + 0.7152 * g + 0.0722 * b);
+  }
+}
+
+
+void grayscale(unsigned char *data_inh, unsigned char *data_outh, int height, int width) 
 {
-    int col = blockIdx.x * blockDim.x + threadIdx.x; 
-    int row = blockIdx.y * blockDim.y + threadIdx.y; 
+    unsigned char *data_ind, *data_outd;
+    cudaError_t err;
     
-    if (row < n && col < m) 
-    {
-        int idx = row * m + col; 
-        float val = 0;
-        
-        for (int i = 0; i < k; i++) 
-            val += (mat1[row * k  + i] * mat2[i * m + col]); 
-        mat3[idx] = val;
-    }
-}
-
-void matrixCopy(float *matdest, float *matsrc, int num_rows, int num_cols, cudaMemcpyKind direction)
-{
-    cudaError_t err = cudaMemcpy(matdest, matsrc, (num_rows * num_cols * sizeof(float)), direction);
-    if (err != cudaSuccess) 
-    {
-        fprintf(stderr, "Failed to copy matdest from host to device (error code %s)!\n", cudaGetErrorString(err));
-        exit(EXIT_FAILURE);
-    }
-}
-
-float* matrixAllocate(int num_rows, int num_cols)
-{
-    float *mat;
-    cudaError_t err = cudaMalloc((void **)&mat, (num_rows * num_cols * sizeof(float)));
-    if (err != cudaSuccess) 
-    {
+    err = cudaMalloc((void **)&data_ind, (height * width * 3 * sizeof(unsigned char)));
+    if (err != cudaSuccess) {
         fprintf(stderr, "Failed to allocate memory in device (error code %s)!\n", cudaGetErrorString(err));
         exit(EXIT_FAILURE);
-     }
-    return mat;
-}
-
-void matmul(float *mat1_h, float *mat2_h, float *mat3_h, int n, int m, int k)
-{
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    }
     
-    float *mat1_d = matrixAllocate(n, k);
-    float *mat2_d = matrixAllocate(k, m);
-    float *mat3_d = matrixAllocate(n, m);
+    err = cudaMalloc((void **)&data_outd, (height * width * sizeof(unsigned char)));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to allocate memory in device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
     
-    matrixCopy(mat1_d, mat1_h, n, k, cudaMemcpyHostToDevice);
-    matrixCopy(mat2_d, mat2_h, k, m, cudaMemcpyHostToDevice);
+    err = cudaMemcpy(data_ind, data_inh, (height * width * 3 * sizeof(unsigned char)), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to copy data to device (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
     
     dim3 dimBlock(32, 32, 1);
-    dim3 dimGrid(ceil(m/32.0), ceil(n/32.0), 1);
-    cudaEventRecord(start);
-    matmulKernel<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, n, m, k);
-    cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess) 
-        printf("Error: %s\n", cudaGetErrorString(err));
-    matrixCopy(mat3_h, mat3_d, n, m, cudaMemcpyDeviceToHost);
+    dim3 dimGrid(ceil(width/32.0), ceil(height/32.0), 1);
+    grayscaleKernel<<<dimGrid, dimBlock>>>(data_ind, data_outd, height, width);
     
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    err = cudaMemcpy(data_outh, data_outd, (height * width * sizeof(unsigned char)),  cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "Failed to copy data to host (error code %s)!\n", cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    } 
     
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    
-    printf("GPU TIME: %f microsecs\n", milliseconds * 1000);
-    
-    cudaFree(mat1_d);
-    cudaFree(mat2_d);
-    cudaFree(mat3_d);
 }
