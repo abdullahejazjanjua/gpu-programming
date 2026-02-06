@@ -16,5 +16,11 @@ int main(int argc, char **argv) {
     
     grayscale(img_in.data, img_out.data, img_in.rows, img_in.cols);
     
+    bool check = imwrite("lena-grayscale.jpg", img_out);
+    if (check) {
+        cerr << "Failed to save the image" << endl;
+        exit(EXIT_FAILURE);
+    }
+    
     return 0;
 }
