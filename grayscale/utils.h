@@ -3,6 +3,10 @@
 
 #include <opencv2/opencv.hpp>
 
+// utils.cpp
 cv::Mat read_image(std::string path);
+
+// grayscale.cu
+void grayscale(unsigned char *data_inh, unsigned char *data_outh, int height, int width);
 
 #endif
