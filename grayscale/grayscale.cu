@@ -39,7 +39,9 @@ void grayscale(unsigned char *data_inh, unsigned char *data_outh, int height, in
         exit(EXIT_FAILURE);
     }
     
-    grayscaleKernel(data_ind, data_outd, height, width);
+    dim3 dimBlock(32, 32, 1);
+    dim3 dimGrid(ceil(width/32.0), ceil(height/32.0), 1);
+    grayscaleKernel<<dimGrid, dimBlock>>>(data_ind, data_outd, height, width);
     
     err = cudaMemcpy(data_outh, data_outd, cudaMemcpyDeviceToHost);
     if (err != cudaSucess) {
