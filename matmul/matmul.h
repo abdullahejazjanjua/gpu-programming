@@ -1,1 +1,0 @@
-void matmul(float *mat1_h, float *mat2_h, float *mat3_h, int n, int m, int k);
