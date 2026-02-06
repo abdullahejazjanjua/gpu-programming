@@ -7,7 +7,7 @@ using namespace cv;
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        cerr << "Usage: ./grayscale <path-to-img>" << endl;
+        cerr << "Usage: ./blur <path-to-img>" << endl;
         exit(EXIT_FAILURE);
     }
     
@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     
     blur(img_in.data, img_out.data, img_in.rows, img_in.cols, 3);
     
-    bool check = imwrite("lena-grayscale.jpg", img_out);
+    bool check = imwrite("lena-blur.jpg", img_out);
     if (!check) {
         cerr << "Failed to save the image" << endl;
         exit(EXIT_FAILURE);
