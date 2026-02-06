@@ -12,9 +12,9 @@ int main(int argc, char **argv) {
     }
     
     Mat img_in = read_image(argv[1]);
-    Mat img_out = Mat(img_in.rows, img_in.cols, CV_8UC1);
+    Mat img_out = Mat(img_in.rows, img_in.cols, CV_8UC3);
     
-    grayscale(img_in.data, img_out.data, img_in.rows, img_in.cols);
+    blur(img_in.data, img_out.data, img_in.rows, img_in.cols, 3);
     
     bool check = imwrite("lena-grayscale.jpg", img_out);
     if (!check) {
