@@ -1,6 +1,8 @@
+#include <cstddef>
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <new>
 
 using namespace std;
 
@@ -15,10 +17,20 @@ int main(int argc, char *argv[])
     int k = stoi(argv[2]);
     int m = stoi(argv[3]);
     
-    float *mat1 = new float[n * k];
-    float *mat2 = new float[k * m];
-    if (mat1 == nullptr || mat2 == nullptr) {
-        cerr << "Allocation failed\n";
+    float *mat1 = nullptr, *mat2 = nullptr;
+    try {
+        mat1 = new float[(size_t) n * k];
+    }
+    catch(const std::bad_alloc& e) {
+        cerr << "Memory Allocation failed\n";
+        exit(EXIT_FAILURE);
+    }
+    
+    try {
+        mat2 = new float[(size_t) k * m];
+    }
+    catch(const std::bad_alloc& e) {
+        cerr << "Memory Allocation failed\n";
         exit(EXIT_FAILURE);
     }
     
@@ -63,5 +75,8 @@ int main(int argc, char *argv[])
         }
         ofile << "\n";
     }
+    
+    delete [] mat1;
+    delete [] mat2;
     
 }

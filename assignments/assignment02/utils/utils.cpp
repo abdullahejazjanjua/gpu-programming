@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <cstring>
+#include <new>
 #include <sstream>
 #include <fstream>
 #include <iomanip>
@@ -10,9 +11,12 @@
 using namespace std;
 
 float* allocateMatrix(int num_rows, int num_cols) {
-    float *mat = new float[(size_t) num_rows * num_cols]; 
-    if (mat == nullptr) {
-        cerr << "Couldn't allocate memory\n";
+    float *mat = nullptr;
+    try {
+        mat = new float[(size_t) num_rows * num_cols]; 
+    } 
+    catch(const std::bad_alloc& e) {
+        cerr << "Memory Allocation failed\n";
         exit(EXIT_FAILURE);
     }
     return mat;
@@ -21,11 +25,11 @@ float* allocateMatrix(int num_rows, int num_cols) {
 void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols) {
     string str;
     int i = 0;
-    while (getline(f, str) && i != num_rows) {
+    while (i != num_rows && getline(f, str)) {
         string val;
         int j = 0;
         stringstream ss(str);
-        while (getline(ss, val, ' ') && j < num_cols) {
+        while (j < num_cols && getline(ss, val, ' ')) {
             mat[i * num_cols + j] = stof(val);
             j++;
         }

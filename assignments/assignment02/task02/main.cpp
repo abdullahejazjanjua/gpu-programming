@@ -5,17 +5,14 @@
 
 using namespace std;
 
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
         cerr << "USAGE: ./a.out <input-file>.txt [<output-file>.txt]\n";
         return 1;
     }
     
     ifstream ifile(argv[1]);
-    if (!ifile.is_open())
-    {
+    if (!ifile.is_open()) {
         cerr << "File not open\n";
         return 1;
     }
@@ -39,13 +36,15 @@ int main(int argc, char *argv[])
 
     float *C = mulMatrixCPU(A, B, n, m, k);
     
-    if (argc == 2)
-    {
+    if (argc == 2) {
         printMatrix(C, n, m, cout);
     }
-    else
-    {
+    else {
         ofstream ofile(argv[2]);
+        if (!ofile.is_open()) {
+            cerr << "File not open\n";
+            return 1;
+        }
         printMatrix(C, n, m, ofile);
         ofile.close();
     }

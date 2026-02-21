@@ -9,7 +9,7 @@ using namespace std;
 void benchmark(int n, int m, int k);
 void populate_matrix(float *mat, int rows, int cols);
 void checkError(float *C_cpu, float *C_gpu_naive, float *C_gpu_tiling, int num_rows, int num_cols);
-float* computeTime(float *mat1, float* mat2, int n, int k, int m, float* (*func)(float*, float*, int, int, int));
+float* computeTime(float *mat1, float* mat2, int n, int m, int k, float* (*func)(float*, float*, int, int, int));
 
 
 int main(int argc, char *argv[]) {
