@@ -19,6 +19,7 @@ assignments/assignment01/inputfiles
 *.lo
 *.o
 *.obj
+*.out
 
 # Precompiled Headers
 *.gch
