@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        cerr << "USAGE: ./a.out <input-file>.txt [<output-file>.txt]\num_rows";
+        cerr << "USAGE: ./a.out <input-file>.txt [<output-file>.txt]\n";
         return 1;
     }
     
@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
     
     getline(ifile, str);
     readMatrix(ifile, A, n, k);
+    getline(ifile, str); // consume the empty space
     readMatrix(ifile, B, k, m);    
     ifile.close();
 
