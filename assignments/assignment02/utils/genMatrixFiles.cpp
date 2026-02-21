@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     
+    srand(time(0));
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < k; j++) {
             mat1[i * k + j] = (float)(rand()) / (float)(RAND_MAX);

@@ -15,12 +15,12 @@ gpu_tiled_times = [132.5, 418.8, 1656.7, 7028.2, 308.5, 289.0, 1339.7, 1526.8, 2
 
 plt.figure(figsize=(10,6))
 
-# Plot the raw data arrays directly instead of np.log()
+
 plt.plot(sizes, cpu_times, label='CPU', marker='o')
 plt.plot(sizes, gpu_naive_times, label='GPU Naive', marker='s')
 plt.plot(sizes, gpu_tiled_times, label='GPU Tiled', marker='^')
 
-# Apply logarithmic scaling to the Y-axis visually
+
 plt.yscale('log')
 
 plt.xlabel('Matrix Size (NxMxK)')

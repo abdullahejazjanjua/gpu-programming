@@ -10,7 +10,7 @@
 using namespace std;
 
 float* allocateMatrix(int num_rows, int num_cols) {
-    float *mat = new float[num_rows * num_cols]; 
+    float *mat = new float[(size_t) num_rows * num_cols]; 
     if (mat == nullptr) {
         cerr << "Couldn't allocate memory\n";
         exit(EXIT_FAILURE);
@@ -34,7 +34,7 @@ void readMatrix(ifstream& f, float *mat, int num_rows, int num_cols) {
 }
 
 void printMatrix(float *mat, int num_rows, int num_cols, ostream& out) {
-    out << "size: " << num_rows << " x " << num_cols << endl;
+    out << "size: " << num_rows << " x " << num_cols << endl << endl;
     out << std::fixed << std::setprecision(2);
     for (int i = 0; i < num_rows; i++) {
         for (int j = 0; j < num_cols; j++) {

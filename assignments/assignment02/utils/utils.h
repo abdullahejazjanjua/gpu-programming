@@ -5,8 +5,6 @@
 #include <iostream>
 
 float* allocateMatrix(int num_rows, int num_cols);
-void freeMatrix(float *mat, int num_rows);
-float* addMatrix(float *mat1, float *mat2, int num_rows, int num_cols);
 void readMatrix(std::ifstream& f, float *mat, int num_rows, int num_cols);
 void printMatrix(float *mat, int num_rows, int num_cols, std::ostream& out);
 float* mulMatrixCPU(float *mat1, float *mat2, int n, int m, int k);

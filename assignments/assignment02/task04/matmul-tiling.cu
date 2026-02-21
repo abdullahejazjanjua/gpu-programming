@@ -54,9 +54,10 @@ void mulMatrixGPUTiling(float *mat1_h, float *mat2_h, float *mat3_h,  int N, int
     dim3 dimGrid((M + 31) / 32, (N + 31) / 32, 1);
     matmulTilingKernel<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, N, M, K);
     cudaError_t err = cudaGetLastError();
-    if (err != cudaSuccess)
+    if (err != cudaSuccess) {
         printf("Error: %s\n", cudaGetErrorString(err));
-    
+        exit(EXIT_FAILURE);
+    }
     gpuErrchk( cudaMemcpy(mat3_h, mat3_d, ((size_t) N * M * sizeof(float)), cudaMemcpyDeviceToHost) );
     
     cudaEventRecord(stop);

@@ -46,8 +46,6 @@ int main(int argc, char *argv[])
     else
     {
         ofstream ofile(argv[2]);
-        ofile << n << "\n";
-        ofile << m << "\n\n";
         printMatrix(C, n, m, ofile);
         ofile.close();
     }
