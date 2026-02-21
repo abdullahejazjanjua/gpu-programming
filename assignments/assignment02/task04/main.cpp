@@ -95,8 +95,8 @@ void checkError(float *C_cpu, float *C_gpu_naive, float *C_gpu_tiling, int num_r
             float naive_val = C_gpu_naive[idx];
             float tiling_val = C_gpu_tiling[idx];
 
-            error_naive += abs(cpu_val - naive_val) / (max(max(cpu_val, naive_val), eps));
-            error_tiling += abs(cpu_val - tiling_val) / max(max(cpu_val, tiling_val), eps);  
+            error_naive += abs(cpu_val - naive_val) / (std::max(std::max(cpu_val, naive_val), eps));
+            error_tiling += abs(cpu_val - tiling_val) / std::max(std::max(cpu_val, tiling_val), eps);  
 
         }
     }

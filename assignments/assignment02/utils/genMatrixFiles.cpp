@@ -52,6 +52,7 @@ int main(int argc, char *argv[])
     }
     
     ofile << "\n";
+    
     for (int i = 0; i < k; i++) {
         for (int j = 0; j < m; j++) {
             if (j == m - 1)
