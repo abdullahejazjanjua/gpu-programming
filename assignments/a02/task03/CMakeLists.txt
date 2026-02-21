@@ -7,7 +7,7 @@ set(CMAKE_CUDA_ARCHITECTURES 86)
 add_library(utils STATIC
     ../utils/utils.cpp
     ../utils/utils.h
-    matmul-naive.cu
+    matmul.cu
 )
 
 target_include_directories(utils PUBLIC ../utils)

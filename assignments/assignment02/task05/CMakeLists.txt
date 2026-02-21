@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(matmul-gpu LANGUAGES CXX CUDA)
+project(matmul-tiling LANGUAGES CXX CUDA)
 
 set(CMAKE_CUDA_ARCHITECTURES 86)
 
@@ -7,7 +7,7 @@ set(CMAKE_CUDA_ARCHITECTURES 86)
 add_library(utils STATIC
     ../utils/utils.cpp
     ../utils/utils.h
-    matmul-naive.cu
+    matmul-tiling.cu
 )
 
 target_include_directories(utils PUBLIC ../utils)

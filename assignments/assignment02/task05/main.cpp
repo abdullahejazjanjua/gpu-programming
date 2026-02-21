@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     readMatrix(ifile, B, k, m);    
     ifile.close();
 
-    mulMatrixGPUNaive(A, B, C, n, m, k);
+    mulMatrixGPUTiling(A, B, C, n, m, k);
     
     if (argc == 2)
     {

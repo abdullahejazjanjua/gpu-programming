@@ -30,14 +30,13 @@ int main(int argc, char *argv[])
 
     float *A = allocateMatrix(n, k);
     float *B = allocateMatrix(k, m);
-    float *C = allocateMatrix(n, m);
     
     getline(ifile, str);
     readMatrix(ifile, A, n, k);
     readMatrix(ifile, B, k, m);    
     ifile.close();
 
-    mulMatrixGPUNaive(A, B, C, n, m, k);
+    float *C = mulMatrixCPU(A, B, n, m, k);
     
     if (argc == 2)
     {
