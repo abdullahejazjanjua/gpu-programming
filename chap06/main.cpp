@@ -32,6 +32,7 @@ void transpose(std::vector<float>& src, std::vector<float>& dst, int m, int k);
   std::vector<float> mat3_cpu(n * m);
   std::vector<float> mat3_gpu_col_major(n * m);
   std::vector<float> mat3_gpu_row_major(n * m);
+  std::vector<float> mat3_gpu_row_major_coarsing(n * m);
 
   FillMatrix(mat1);
   FillMatrix(mat2);
@@ -41,13 +42,17 @@ void transpose(std::vector<float>& src, std::vector<float>& dst, int m, int k);
   ComputeTime(mat1, mat2, mat3_cpu, n, m, k, MatMulCpu);
   
   std::cout << "Row Major:= ";
-  MatMulGpu(mat1.data(), mat2_T.data(), mat3_gpu_row_major.data(), n, m, k, true);
+  MatMulGpu(mat1.data(), mat2_T.data(), mat3_gpu_row_major.data(), n, m, k, true, false);
+  
+  std::cout << "Row Major (Thread Coarsing) := ";
+  MatMulGpu(mat1.data(), mat2_T.data(), mat3_gpu_row_major_coarsing.data(), n, m, k, false, true);
   
   std::cout << "Col Major:= ";
   MatMulGpu(mat1.data(), mat2.data(), mat3_gpu_col_major.data(), n, m, k, false);
   
   CheckError(mat3_cpu, mat3_gpu_col_major, n, m);
   CheckError(mat3_cpu, mat3_gpu_row_major, n, m);
+  CheckError(mat3_cpu, mat3_gpu_row_major_coarsing, n, m);
 }
 
 void FillMatrix(std::vector<float> &mat) {

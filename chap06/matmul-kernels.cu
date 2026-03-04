@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 #define TILE_SIZE 32
+#define COARSE_FACTOR 4
+
 #define CHECK_CUDA(code)                                                       \
   do {                                                                         \
     if ((code) != cudaSuccess) {                                               \
@@ -11,8 +13,8 @@
     }                                                                          \
   } while (0)
 
-__global__ void MatmulKernelColMajor(float *mat1, float *mat2, float *mat3, int n,
-                             int m, int k) {
+__global__ void MatmulKernelColMajor(float *mat1, float *mat2, float *mat3,
+                                     int n, int m, int k) {
 
   __shared__ float mat1_s[TILE_SIZE][TILE_SIZE];
   __shared__ float mat2_s[TILE_SIZE][TILE_SIZE];
@@ -50,41 +52,88 @@ __global__ void MatmulKernelColMajor(float *mat1, float *mat2, float *mat3, int 
   }
 }
 
-__global__ void MatmulKernelRowMajor(float *mat1, float *mat2, float *mat3,  int n, int m, int k) {
-    __shared__ float Mds[TILE_SIZE][TILE_SIZE];
-    __shared__ float Nds[TILE_SIZE][TILE_SIZE];
-    
-    int row = blockIdx.y * blockDim.y + threadIdx.y; // n
-    int col = blockIdx.x * blockDim.x + threadIdx.x; // m
-    
-    float pvalue = 0.0f;
-    for (int phase = 0; phase < ceil((float) k/TILE_SIZE); phase++) {
-        
-        int mat1_col = (phase * TILE_SIZE + threadIdx.x);
-        int mat2_row = (phase * TILE_SIZE + threadIdx.y);
-        
-        if (row < n && mat1_col < k) {
-            Mds[threadIdx.y][threadIdx.x] = mat1[row * k + mat1_col];
-        }
-        else Mds[threadIdx.y][threadIdx.x] = 0.0f;
-        
-        if (mat2_row < k && col < m) {
-            Nds[threadIdx.y][threadIdx.x] = mat2[mat2_row * m + col];
-        }
-        else Nds[threadIdx.y][threadIdx.x] = 0.0f;
-        __syncthreads();
-        
-        for (int tile_i = 0; tile_i < TILE_SIZE; tile_i++) {
-            pvalue += (Mds[threadIdx.y][tile_i] * Nds[tile_i][threadIdx.x]);
-        }
-        __syncthreads();
+__global__ void MatmulKernelRowMajor(float *mat1, float *mat2, float *mat3,
+                                     int n, int m, int k) {
+  __shared__ float Mds[TILE_SIZE][TILE_SIZE];
+  __shared__ float Nds[TILE_SIZE][TILE_SIZE];
+
+  int row = blockIdx.y * blockDim.y + threadIdx.y; // n
+  int col = blockIdx.x * blockDim.x + threadIdx.x; // m
+
+  float pvalue = 0.0f;
+  for (int phase = 0; phase < ceil((float)k / TILE_SIZE); phase++) {
+
+    int mat1_col = (phase * TILE_SIZE + threadIdx.x);
+    int mat2_row = (phase * TILE_SIZE + threadIdx.y);
+
+    if (row < n && mat1_col < k) {
+      Mds[threadIdx.y][threadIdx.x] = mat1[row * k + mat1_col];
+    } else
+      Mds[threadIdx.y][threadIdx.x] = 0.0f;
+
+    if (mat2_row < k && col < m) {
+      Nds[threadIdx.y][threadIdx.x] = mat2[mat2_row * m + col];
+    } else
+      Nds[threadIdx.y][threadIdx.x] = 0.0f;
+    __syncthreads();
+
+    for (int tile_i = 0; tile_i < TILE_SIZE; tile_i++) {
+      pvalue += (Mds[threadIdx.y][tile_i] * Nds[tile_i][threadIdx.x]);
     }
-    if (row < n && col < m) 
-        mat3[row * m + col] = pvalue;
+    __syncthreads();
+  }
+  if (row < n && col < m)
+    mat3[row * m + col] = pvalue;
+}
+
+__global__ void MatmulKernelRowMajorCoarsing(float *mat1, float *mat2,
+                                             float *mat3, int n, int m, int k) {
+  __shared__ float Mds[TILE_SIZE][TILE_SIZE];
+  __shared__ float Nds[TILE_SIZE][TILE_SIZE];
+
+  int row = blockIdx.y * blockDim.y + threadIdx.y;                       // n
+  int col_start = blockIdx.x * blockDim.x * COARSE_FACTOR + threadIdx.x; // m
+
+  float pvalue[COARSE_FACTOR];
+  for (int i = 0; i < COARSE_FACTOR; i++)
+    pvalue[i] = 0.0f;
+
+  for (int phase = 0; phase < ceil((float)k / TILE_SIZE); phase++) {
+
+    int mat1_col = (phase * TILE_SIZE + threadIdx.x);
+    int mat2_row = (phase * TILE_SIZE + threadIdx.y);
+
+    if (row < n && mat1_col < k) {
+      Mds[threadIdx.y][threadIdx.x] = mat1[row * k + mat1_col];
+    } else
+      Mds[threadIdx.y][threadIdx.x] = 0.0f;
+
+    for (int c = 0; c < COARSE_FACTOR; c++) {
+      int col = col_start + c * TILE_SIZE;
+
+      if (mat2_row < k && col < m) {
+        Nds[threadIdx.y][threadIdx.x] = mat2[mat2_row * m + col];
+      } else
+        Nds[threadIdx.y][threadIdx.x] = 0.0f;
+      __syncthreads();
+
+      for (int tile_i = 0; tile_i < TILE_SIZE; tile_i++) {
+        pvalue[c] += (Mds[threadIdx.y][tile_i] * Nds[tile_i][threadIdx.x]);
+      }
+      __syncthreads();
+    }
+  }
+
+  for (int c = 0; c < COARSE_FACTOR; c++) {
+    int col = col_start + c * TILE_SIZE;
+    if (row < n && col < m) {
+        mat3[row * m + col] = pvalue[c];
+    }
+  }
 }
 
 void MatMulGpu(float *mat1_h, float *mat2_h, float *mat3_h, int n, int m, int k,
-               bool is_row_major = true) {
+               bool is_row_major = false, bool thread_coarsing = false) {
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
@@ -100,14 +149,21 @@ void MatMulGpu(float *mat1_h, float *mat2_h, float *mat3_h, int n, int m, int k,
   CHECK_CUDA(cudaMemcpy(mat2_d, mat2_h, ((size_t)m * k * sizeof(float)),
                         cudaMemcpyHostToDevice));
 
-  dim3 dimBlock(TILE_SIZE, TILE_SIZE, 1);
-  dim3 dimGrid((m + (TILE_SIZE - 1)) / TILE_SIZE,
-               (n + (TILE_SIZE - 1)) / TILE_SIZE, 1);
-  if (is_row_major)
-      MatmulKernelRowMajor<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, n, m, k); 
-  else
-      MatmulKernelColMajor<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, n, m, k); 
-  
+  dim3 dimBlock(TILE_SIZE, TILE_SIZE);
+
+  if (thread_coarsing) {
+    dim3 dimGrid((m + (TILE_SIZE * COARSE_FACTOR) - 1) / (TILE_SIZE * COARSE_FACTOR), (n + TILE_SIZE - 1) / TILE_SIZE);
+    MatmulKernelRowMajorCoarsing<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, n, m, k);
+  }
+  else if (is_row_major) {
+    dim3 dimGrid((m + TILE_SIZE - 1) / TILE_SIZE, (n + TILE_SIZE - 1) / TILE_SIZE);
+    MatmulKernelRowMajor<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, n, m, k);
+  }
+  else {
+    dim3 dimGrid((m + TILE_SIZE - 1) / TILE_SIZE, (n + TILE_SIZE - 1) / TILE_SIZE);
+    MatmulKernelColMajor<<<dimGrid, dimBlock>>>(mat1_d, mat2_d, mat3_d, n, m, k);
+  }
+
   CHECK_CUDA(cudaGetLastError());
 
   CHECK_CUDA(cudaMemcpy(mat3_h, mat3_d, ((size_t)n * m * sizeof(float)),
