@@ -1,1 +1,0 @@
-This folder is meant to keep a versus of CPU vs GPU matrix multiplication programs as I learn about them in both GPU programming course and Design and Analysis of Algorithms course at GIKI.
