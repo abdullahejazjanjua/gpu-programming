@@ -298,6 +298,8 @@ int main( int argc, char* argv[] )
         threshold = atoi(argv[1]);
     }
     read_pgm(stdin, &bmap);
+    fprintf(stderr, "image size: %d x %d\n", bmap.height, bmap.width);
+    
     init_pgm(&out, bmap.width, bmap.height, WHITE);
     double tstart = hpc_gettime();
     edge_detect(&bmap, &out, threshold);

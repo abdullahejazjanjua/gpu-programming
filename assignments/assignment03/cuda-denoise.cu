@@ -320,6 +320,8 @@ int main( void )
 {
     PPM_image img;
     read_ppm(stdin, &img);
+    fprintf(stderr, "image size: %d x %d\n", img.height, img.width);
+    
     
     PPM_image img_out;
     
