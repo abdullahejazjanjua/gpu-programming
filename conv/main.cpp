@@ -21,11 +21,19 @@ int main(int argc, char *argv[]) {
     FillWithData(datain);
     FillWithData(filter);
     
+    std::cout << "Benchmarking CPU:\n";
     std::vector<float> dataout_cpu = ComputeTime(datain, filter, n, m, ConvCPU);
-    std::cout << "V1: \n";
+    std::cout << "Benchmarking GPU:\n";
+    std::cout << " V1: ";
     ConvGpu(datain.data(), dataout_gpu.data(), filter.data(), n, m, 1);
-    std::cout << "V2\n";
+    std::cout << " V2: ";
     ConvGpu(datain.data(), dataout_gpu.data(), filter.data(), n, m, 2);
+    std::cout << " V3: ";
+    ConvGpu(datain.data(), dataout_gpu.data(), filter.data(), n, m, 3);
+    std::cout << " V4: ";
+    ConvGpu(datain.data(), dataout_gpu.data(), filter.data(), n, m, 4);
+    
+    // CheckCorrectness(dataout_cpu, dataout_gpu, n, m);
     
     return 0;
 }

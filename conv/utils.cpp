@@ -59,7 +59,7 @@ std::vector<float> ComputeTime(const std::vector<float> &datain, const std::vect
     auto end = std::chrono::high_resolution_clock::now();
     
     std::cout
-        << "CPU TIME: "
+        << "    CPU TIME: "
         << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin)).count()
         << " microsecs" << std::endl;
         
