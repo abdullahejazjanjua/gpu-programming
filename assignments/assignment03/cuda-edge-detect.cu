@@ -36,13 +36,13 @@ Example:
 
 */
 
+#include <driver_types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 #include "hpc.h"
-#include <string.h>
 
 typedef struct {
     int width;   /* Width of the image (in pixels) */
@@ -53,6 +53,41 @@ typedef struct {
 
 const unsigned char WHITE = 255;
 const unsigned char BLACK = 0;
+
+
+#define CHECK_CUDA(code)                                                                             \
+  do {                                                                                                \
+    if ((code) != cudaSuccess) {                                                                       \
+        fprintf(stderr, "GPU ERROR in %s:%d := %s\n", __FILE__ , __LINE__, cudaGetErrorString(code));   \
+      exit(code);                                                                                        \
+    }                                                                                                     \
+  } while (0)
+
+
+#define FILTER_RADIUS 1
+#define FILTER_SIZE ((2 * (FILTER_RADIUS)) + 1)
+
+#define IN_DIM 32
+#define BLOCK_SIZE (IN_DIM)
+
+#define OUT_DIM ((IN_DIM) - 2*(FILTER_RADIUS))
+
+
+__constant__ float SOBEL_X[3][3];
+__constant__ float SOBEL_Y[3][3];
+
+float sobel_x_host[3][3] = {
+    {-1.0f,  0.0f,  1.0f},
+    {-2.0f,  0.0f,  2.0f},
+    {-1.0f,  0.0f,  1.0f}
+};
+
+float sobel_y_host[3][3] = {
+    {-1.0f, -2.0f, -1.0f},
+    { 0.0f,  0.0f,  0.0f},
+    { 1.0f,  2.0f,  1.0f}
+};
+
 
 /**
  * Initialize a PGM_image object: allocate space for a bitmap of size
@@ -190,6 +225,66 @@ void edge_detect( const PGM_image* in, PGM_image* edges, int threshold )
     }
 }
 
+__global__ void sobel_conv_gpu(unsigned char *datain, unsigned char *dataout, int threshold, int  n, int m) {
+    __shared__ float datain_tile[IN_DIM][IN_DIM];
+    
+    int row = blockIdx.y * OUT_DIM + threadIdx.y - FILTER_RADIUS;
+    int col = blockIdx.x * OUT_DIM + threadIdx.x - FILTER_RADIUS;
+    
+    if ((row >= 0 && row < n) && (col >= 0 && col < m))
+        datain_tile[threadIdx.y][threadIdx.x] = datain[row * m + col];
+    else
+        datain_tile[threadIdx.y][threadIdx.x] = 0.0f;
+    __syncthreads();
+    
+    
+    int tilerow = threadIdx.y - FILTER_RADIUS;
+    int tilecol = threadIdx.x - FILTER_RADIUS;
+    if ( ((row >= 0 && row < n) && (col >= 0 && col < m)) && 
+         ((tilerow >= 0 && tilerow < OUT_DIM) && (tilecol >= 0 && tilecol < OUT_DIM)) ) {
+        float Gx = 0.0f;
+        float Gy = 0.0f;
+        
+        for (int fi = 0; fi < FILTER_SIZE; fi++) {
+            for (int fj = 0; fj < FILTER_SIZE; fj++) {
+                Gx += (datain_tile[tilerow + fi][tilecol + fj] * SOBEL_X[fi][fj]);
+                Gy += (datain_tile[tilerow + fi][tilecol + fj] * SOBEL_Y[fi][fj]);
+            }
+        }  
+        const int magnitude = Gx * Gx + Gy * Gy;
+        if  (magnitude > threshold*threshold)
+            dataout[row * m + col] = WHITE;
+        else
+            dataout[row * m + col] = BLACK;
+    }   
+}
+
+int cdiv(int size, int block_size) {
+    return (size + block_size - 1) / block_size;
+}
+
+void edge_detect_gpu(PGM_image *datain, PGM_image *dataout, int threshold) {
+    unsigned char *datain_d, *dataout_d;
+    int n = datain->height;
+    int m = datain->width;
+    
+    CHECK_CUDA(cudaMalloc((void **)&datain_d, (n * m * sizeof(unsigned char))));
+    CHECK_CUDA(cudaMalloc((void **)&dataout_d, (n * m * sizeof(unsigned char))));
+    
+    CHECK_CUDA(cudaMemcpy(datain_d, datain->bmap, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpyToSymbol(SOBEL_X, sobel_x_host, (FILTER_SIZE * FILTER_SIZE * sizeof(float))));
+    CHECK_CUDA(cudaMemcpyToSymbol(SOBEL_Y, sobel_y_host, (FILTER_SIZE * FILTER_SIZE * sizeof(float))));
+    
+    dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 dimGrid(cdiv(m, OUT_DIM), cdiv(n, OUT_DIM));
+    sobel_conv_gpu<<<dimGrid, dimBlock>>>(datain_d, dataout_d, threshold, n, m);
+    
+    CHECK_CUDA(cudaMemcpy(dataout->bmap, dataout_d, (n * m * sizeof(unsigned char)), cudaMemcpyDeviceToHost));
+    
+    CHECK_CUDA(cudaFree(datain_d));
+    CHECK_CUDA(cudaFree(dataout_d));
+}
+
 int main( int argc, char* argv[] )
 {
     PGM_image bmap, out;
@@ -204,11 +299,18 @@ int main( int argc, char* argv[] )
     }
     read_pgm(stdin, &bmap);
     init_pgm(&out, bmap.width, bmap.height, WHITE);
-    const double tstart = hpc_gettime();
+    double tstart = hpc_gettime();
     edge_detect(&bmap, &out, threshold);
-    const double elapsed = hpc_gettime() - tstart;
-    fprintf(stderr, "Execution time %.3f\n", elapsed);
-    write_pgm(stdout, &out, "produced by opencl-edge-detect.c");
+    double elapsed = hpc_gettime() - tstart;
+    fprintf(stderr, "CPU Execution time %.3f\n", elapsed);
+    
+    
+    tstart = hpc_gettime();
+    edge_detect_gpu(&bmap, &out, threshold);
+    elapsed = hpc_gettime() - tstart;
+    fprintf(stderr, "GPU Execution time %.3f\n", elapsed);
+    
+    write_pgm(stdout, &out, "produced by cuda-edge-detect.c");
     free_pgm(&bmap);
     free_pgm(&out);
     return EXIT_SUCCESS;

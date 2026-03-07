@@ -46,6 +46,25 @@ Example:
 #include <assert.h>
 
 #include "hpc.h"
+
+#define CHECK_CUDA(code)                                                                             \
+  do {                                                                                                \
+    if ((code) != cudaSuccess) {                                                                       \
+        fprintf(stderr, "GPU ERROR in %s:%d := %s\n", __FILE__ , __LINE__, cudaGetErrorString(code));   \
+      exit(code);                                                                                        \
+    }                                                                                                     \
+  } while (0)
+
+
+#define FILTER_RADIUS 1
+#define FILTER_SIZE ((2 * (FILTER_RADIUS)) + 1)
+
+#define IN_DIM 32
+#define BLOCK_SIZE (IN_DIM)
+
+#define OUT_DIM ((IN_DIM) - 2*(FILTER_RADIUS))
+
+
 typedef struct {
     int width;   /* Width of the image (in pixels) */
     int height;  /* Height of the image (in pixels) */
@@ -140,7 +159,7 @@ void free_ppm( PPM_image* img )
 /**
  * Swap *a and *b if necessary so that, at the end, *a <= *b
  */
-void compare_and_swap( unsigned char *a, unsigned char *b )
+__host__ __device__ void compare_and_swap( unsigned char *a, unsigned char *b )
 {
     if (*a > *b ) {
         unsigned char tmp = *a;
@@ -157,7 +176,7 @@ unsigned char *PTR(unsigned char *bmap, int width, int i, int j)
 /**
  * Return the median of v[0..4]
  */
-unsigned char median_of_five( unsigned char v[5] )
+__host__ __device__ unsigned char median_of_five( unsigned char v[5] )
 {
     /* We do a partial sort of v[5] using bubble sort until v[2] is
        correctly placed; this element is the median. (There are better
@@ -171,7 +190,7 @@ unsigned char median_of_five( unsigned char v[5] )
     compare_and_swap( v+1, v+2 );
     compare_and_swap( v+3, v+4 );
     compare_and_swap( v+2, v+3 );
-    return v[2];
+    return v[2]; // return the third element
 }
 
 /**
@@ -200,17 +219,73 @@ void denoise( unsigned char *bmap, int width, int height )
     free(out);
 }
 
+__global__ void denoisekernel(unsigned char *datain, unsigned char *dataout, int  n, int m) {
+    __shared__ unsigned char datain_tile[IN_DIM][IN_DIM];
+    unsigned char v[5];
+    
+    int row = blockIdx.y * OUT_DIM + threadIdx.y - FILTER_RADIUS;
+    int col = blockIdx.x * OUT_DIM + threadIdx.x - FILTER_RADIUS;
+    
+    if ((row >= 0 && row < n) && (col >= 0 && col < m))
+        datain_tile[threadIdx.y][threadIdx.x] = datain[row * m + col];
+    __syncthreads();
+    
+    if  (   (row >= 1 && row < n - 1) && (col >= 1 && col < m - 1) && 
+            (threadIdx.y >= 1 && threadIdx.y < IN_DIM - 1) && (threadIdx.x >= 1 && threadIdx.x < IN_DIM - 1)   
+        ) {
+            
+            v[0] = datain_tile[threadIdx.y][threadIdx.x];
+            v[1] = datain_tile[threadIdx.y][(threadIdx.x - 1)];
+            v[2] = datain_tile[threadIdx.y][(threadIdx.x + 1)];
+            v[3] = datain_tile[(threadIdx.y - 1)][threadIdx.x];
+            v[4] = datain_tile[(threadIdx.y + 1)][threadIdx.x];
+            
+            dataout[row * m + col] = median_of_five(v);
+    }
+       
+}
+
+int cdiv(int size, int block_size) {
+    return (size + block_size - 1) / block_size;
+}
+
+void denoise_gpu(unsigned char *datain, unsigned char *dataout, int n, int m) {
+    unsigned char *datain_d, *dataout_d;
+
+    CHECK_CUDA(cudaMalloc((void **)&datain_d, (n * m * sizeof(unsigned char))));
+    CHECK_CUDA(cudaMalloc((void **)&dataout_d, (n * m * sizeof(unsigned char))));
+    
+    CHECK_CUDA(cudaMemcpy(datain_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice));
+    
+    dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 dimGrid(cdiv(m, OUT_DIM), cdiv(n, OUT_DIM));
+    denoisekernel<<<dimGrid, dimBlock>>>(datain_d, dataout_d, n, m);
+    
+    CHECK_CUDA(cudaMemcpy(dataout, dataout_d, (n * m * sizeof(unsigned char)), cudaMemcpyDeviceToHost));
+    
+    CHECK_CUDA(cudaFree(datain_d));
+    CHECK_CUDA(cudaFree(dataout_d));
+}
+
+
 int main( void )
 {
     PPM_image img;
+    PPM_image img_out;
     read_ppm(stdin, &img);
     const double tstart = hpc_gettime();
-    denoise(img.r, img.width, img.height);
-    denoise(img.g, img.width, img.height);
-    denoise(img.b, img.width, img.height);
+    // denoise(img.r, img.width, img.height);
+    // denoise(img.g, img.width, img.height);
+    // denoise(img.b, img.width, img.height);
+    
+    denoise_gpu(img.r, img_out.r, img.width, img.height);
+    denoise_gpu(img.g, img_out.g, img.width, img.height);
+    denoise_gpu(img.b, img_out.b, img.width, img.height);
+    
     const double elapsed = hpc_gettime() - tstart;
     fprintf(stderr, "Execution time %.3f\n", elapsed);
-    write_ppm(stdout, &img, "produced by cuda-denoise.cu");
+    write_ppm(stdout, &img_out, "produced by cuda-denoise.cu");
     free_ppm(&img);
+    free_ppm(&img_out);
     return EXIT_SUCCESS;
 }
