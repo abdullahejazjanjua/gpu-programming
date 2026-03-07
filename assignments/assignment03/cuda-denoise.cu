@@ -256,6 +256,7 @@ void denoise_gpu(unsigned char *datain, unsigned char *dataout, int n, int m) {
     CHECK_CUDA(cudaMalloc((void **)&dataout_d, (n * m * sizeof(unsigned char))));
     
     CHECK_CUDA(cudaMemcpy(datain_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(dataout_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice));
     
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE, 1);
     dim3 dimGrid(cdiv(m, OUT_DIM), cdiv(n, OUT_DIM));
@@ -271,19 +272,33 @@ void denoise_gpu(unsigned char *datain, unsigned char *dataout, int n, int m) {
 int main( void )
 {
     PPM_image img;
-    PPM_image img_out;
     read_ppm(stdin, &img);
-    const double tstart = hpc_gettime();
-    // denoise(img.r, img.width, img.height);
-    // denoise(img.g, img.width, img.height);
-    // denoise(img.b, img.width, img.height);
     
-    denoise_gpu(img.r, img_out.r, img.width, img.height);
-    denoise_gpu(img.g, img_out.g, img.width, img.height);
-    denoise_gpu(img.b, img_out.b, img.width, img.height);
+    PPM_image img_out;
     
-    const double elapsed = hpc_gettime() - tstart;
-    fprintf(stderr, "Execution time %.3f\n", elapsed);
+    // intiialize output memory
+    img_out.width = img.width;
+    img_out.height = img.height;
+    img_out.maxcol = img.maxcol;
+    img_out.r = (unsigned char*)malloc(img.width * img.height);
+    img_out.g = (unsigned char*)malloc(img.width * img.height);
+    img_out.b = (unsigned char*)malloc(img.width * img.height);
+    
+    double tstart = hpc_gettime();
+    denoise_gpu(img.r, img_out.r, img.height, img.width);
+    denoise_gpu(img.g, img_out.g, img.height, img.width);
+    denoise_gpu(img.b, img_out.b, img.height, img.width);
+    double elapsed = hpc_gettime() - tstart;
+    fprintf(stderr, "GPU Execution time %.3f\n", elapsed);
+    
+    // CPU Implementation (I moved GPU above because CPU does inplace modification of img)
+    tstart = hpc_gettime();
+    denoise(img.r, img.width, img.height);
+    denoise(img.g, img.width, img.height);
+    denoise(img.b, img.width, img.height); 
+    elapsed = hpc_gettime() - tstart;
+    fprintf(stderr, "CPU Execution time %.3f\n", elapsed);
+    
     write_ppm(stdout, &img_out, "produced by cuda-denoise.cu");
     free_ppm(&img);
     free_ppm(&img_out);
