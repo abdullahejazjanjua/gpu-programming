@@ -40,6 +40,8 @@ Example:
 
  */
 
+#include <cstdlib>
+#include <driver_types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -219,53 +221,98 @@ void denoise( unsigned char *bmap, int width, int height )
     free(out);
 }
 
-__global__ void denoisekernel(unsigned char *datain, unsigned char *dataout, int  n, int m) {
-    __shared__ unsigned char datain_tile[IN_DIM][IN_DIM];
-    unsigned char v[5];
+__global__ void denoisekernel(PPM_image datain, PPM_image dataout, int n, int m) {
+    __shared__ unsigned char datain_tile_r[IN_DIM][IN_DIM];
+    __shared__ unsigned char datain_tile_g[IN_DIM][IN_DIM];
+    __shared__ unsigned char datain_tile_b[IN_DIM][IN_DIM];
+    unsigned char v_r[5];
+    unsigned char v_g[5];
+    unsigned char v_b[5];
     
     int row = blockIdx.y * OUT_DIM + threadIdx.y - FILTER_RADIUS;
     int col = blockIdx.x * OUT_DIM + threadIdx.x - FILTER_RADIUS;
     
-    if ((row >= 0 && row < n) && (col >= 0 && col < m))
-        datain_tile[threadIdx.y][threadIdx.x] = datain[row * m + col];
+    if ((row >= 0 && row < n) && (col >= 0 && col < m)) {
+        datain_tile_r[threadIdx.y][threadIdx.x] = datain.r[row * m + col];
+        datain_tile_g[threadIdx.y][threadIdx.x] = datain.g[row * m + col];
+        datain_tile_b[threadIdx.y][threadIdx.x] = datain.b[row * m + col];
+    }
     __syncthreads();
     
     if  (   (row >= 1 && row < n - 1) && (col >= 1 && col < m - 1) && 
             (threadIdx.y >= 1 && threadIdx.y < IN_DIM - 1) && (threadIdx.x >= 1 && threadIdx.x < IN_DIM - 1)   
         ) {
             
-            v[0] = datain_tile[threadIdx.y][threadIdx.x];
-            v[1] = datain_tile[threadIdx.y][(threadIdx.x - 1)];
-            v[2] = datain_tile[threadIdx.y][(threadIdx.x + 1)];
-            v[3] = datain_tile[(threadIdx.y - 1)][threadIdx.x];
-            v[4] = datain_tile[(threadIdx.y + 1)][threadIdx.x];
-            
-            dataout[row * m + col] = median_of_five(v);
+            // Red Channel
+            v_r[0] = datain_tile_r[threadIdx.y][threadIdx.x];
+            v_r[1] = datain_tile_r[threadIdx.y][threadIdx.x - 1];
+            v_r[2] = datain_tile_r[threadIdx.y][threadIdx.x + 1];
+            v_r[3] = datain_tile_r[threadIdx.y - 1][threadIdx.x];
+            v_r[4] = datain_tile_r[threadIdx.y + 1][threadIdx.x];
+            dataout.r[row * m + col] = median_of_five(v_r);
+
+            // Green Channel
+            v_g[0] = datain_tile_g[threadIdx.y][threadIdx.x];
+            v_g[1] = datain_tile_g[threadIdx.y][threadIdx.x - 1];
+            v_g[2] = datain_tile_g[threadIdx.y][threadIdx.x + 1];
+            v_g[3] = datain_tile_g[threadIdx.y - 1][threadIdx.x];
+            v_g[4] = datain_tile_g[threadIdx.y + 1][threadIdx.x];
+            dataout.g[row * m + col] = median_of_five(v_g);
+
+            // Blue Channel
+            v_b[0] = datain_tile_b[threadIdx.y][threadIdx.x];
+            v_b[1] = datain_tile_b[threadIdx.y][threadIdx.x - 1];
+            v_b[2] = datain_tile_b[threadIdx.y][threadIdx.x + 1];
+            v_b[3] = datain_tile_b[threadIdx.y - 1][threadIdx.x];
+            v_b[4] = datain_tile_b[threadIdx.y + 1][threadIdx.x];
+            dataout.b[row * m + col] = median_of_five(v_b);
     }
-       
 }
 
 int cdiv(int size, int block_size) {
     return (size + block_size - 1) / block_size;
 }
 
-void denoise_gpu(unsigned char *datain, unsigned char *dataout, int n, int m) {
-    unsigned char *datain_d, *dataout_d;
 
-    CHECK_CUDA(cudaMalloc((void **)&datain_d, (n * m * sizeof(unsigned char))));
-    CHECK_CUDA(cudaMalloc((void **)&dataout_d, (n * m * sizeof(unsigned char))));
+void cuda_malloc(PPM_image *datain, size_t size) {
+    CHECK_CUDA(cudaMalloc((void**)&datain->r, size));
+    CHECK_CUDA(cudaMalloc((void**)&datain->g, size));
+    CHECK_CUDA(cudaMalloc((void**)&datain->b, size));
+}
+
+void cuda_memcpy(PPM_image *datain_d, PPM_image *datain_h, size_t size, cudaMemcpyKind kind) {
+    datain_d->height = datain_h->height;
+    datain_d->width = datain_h->width;
+    datain_d->maxcol = datain_h->maxcol;
     
-    CHECK_CUDA(cudaMemcpy(datain_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(dataout_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(datain_d->r, datain_h->r, size, kind));
+    CHECK_CUDA(cudaMemcpy(datain_d->g, datain_h->g, size, kind));
+    CHECK_CUDA(cudaMemcpy(datain_d->b, datain_h->b, size, kind));
+}
+
+void cuda_free(PPM_image *img_d) {
+    CHECK_CUDA(cudaFree(img_d->r));
+    CHECK_CUDA(cudaFree(img_d->g));
+    CHECK_CUDA(cudaFree(img_d->b));
+}
+
+void denoise_gpu(PPM_image *datain, PPM_image *dataout, int n, int m) {
+    PPM_image datain_d, dataout_d;
+    
+    cuda_malloc(&datain_d, (n * m * sizeof(unsigned char)));
+    cuda_malloc(&dataout_d, (n * m * sizeof(unsigned char)));
+    
+    cuda_memcpy(&datain_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice);
+    cuda_memcpy(&dataout_d, datain, (n * m * sizeof(unsigned char)), cudaMemcpyHostToDevice);
     
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE, 1);
     dim3 dimGrid(cdiv(m, OUT_DIM), cdiv(n, OUT_DIM));
     denoisekernel<<<dimGrid, dimBlock>>>(datain_d, dataout_d, n, m);
     
-    CHECK_CUDA(cudaMemcpy(dataout, dataout_d, (n * m * sizeof(unsigned char)), cudaMemcpyDeviceToHost));
+    cuda_memcpy(dataout, &dataout_d, (n * m * sizeof(unsigned char)), cudaMemcpyDeviceToHost);
     
-    CHECK_CUDA(cudaFree(datain_d));
-    CHECK_CUDA(cudaFree(dataout_d));
+    cuda_free(&datain_d);
+    cuda_free(&dataout_d);
 }
 
 
@@ -285,9 +332,7 @@ int main( void )
     img_out.b = (unsigned char*)malloc(img.width * img.height);
     
     double tstart = hpc_gettime();
-    denoise_gpu(img.r, img_out.r, img.height, img.width);
-    denoise_gpu(img.g, img_out.g, img.height, img.width);
-    denoise_gpu(img.b, img_out.b, img.height, img.width);
+    denoise_gpu(&img, &img_out, img.height, img.width);
     double elapsed = hpc_gettime() - tstart;
     fprintf(stderr, "GPU Execution time %.3f\n", elapsed);
     
