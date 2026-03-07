@@ -5,7 +5,7 @@ set(CMAKE_CUDA_ARCHITECTURES 75)
 add_executable(${PROJECT_NAME} main.cpp)
 
 add_library(utils STATIC
-    utils.cpp utils.h common.h conv-kernels.cu
+    utils.cpp utils.h macros.h conv-kernels.cu
 )
 
 target_link_libraries(
